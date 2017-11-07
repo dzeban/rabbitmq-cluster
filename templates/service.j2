@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+
+[Unit]
+Description=RabbitMQ broker
+After=network.target epmd@0.0.0.0.socket
+Wants=network.target epmd@0.0.0.0.socket
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=notify
+User={{ rabbitmq_cluster_user }}
+Group={{ rabbitmq_cluster_group }}
+NotifyAccess=all
+TimeoutStartSec=3600
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=300000
+WorkingDirectory={{ rabbitmq_cluster_mnesia_base }}
+ExecStart=/usr/lib/rabbitmq/bin/rabbitmq-server
+ExecStop=/usr/lib/rabbitmq/bin/rabbitmqctl stop
+ExecStop=/bin/sh -c "while ps -p $MAINPID >/dev/null 2>&1; do sleep 1; done"
+
+# https://github.com/rabbitmq/rabbitmq-server-release/issues/51
+SuccessExitStatus=69
+
+[Install]
+WantedBy=multi-user.target
+

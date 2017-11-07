@@ -1,0 +1,7 @@
+---
+
+- name: service reload
+  systemd: daemon_reload=yes
+
+- name: service restart
+  systemd: name=rabbitmq-server state=restarted

@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+
+{{ rabbitmq_cluster_log_dir }}/*.log {
+        {{ rabbitmq_logrotate_period }}
+        missingok
+        rotate {{ rabbitmq_logrotate_amount }}
+        compress
+        delaycompress
+        notifempty
+        sharedscripts
+        postrotate
+            /etc/init.d/rabbitmq-server rotate-logs > /dev/null
+        endscript
+}

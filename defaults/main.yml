@@ -1,0 +1,47 @@
+---
+
+# Directories
+rabbitmq_cluster_data_dir: /var/lib/rabbitmq/mnesia # Human-readable var for mnesia base
+rabbitmq_cluster_log_dir: /var/log/rabbitmq # Human-readable var for log base
+
+rabbitmq_cluster_mnesia_base: "{{ rabbitmq_cluster_data_dir }}"
+rabbitmq_cluster_log_base: "{{ rabbitmq_cluster_log_dir }}"
+
+# Logging
+rabbitmq_logrotate_period: daily
+rabbitmq_logrotate_amount: 7
+
+# System user and group
+rabbitmq_cluster_group: rabbitmq
+rabbitmq_cluster_user: rabbitmq
+
+# Plugins
+rabbitmq_cluster_plugins:
+  - rabbitmq_management
+  - rabbitmq_management_agent
+
+# RabbitMQ users
+rabbitmq_cluster_disabled_users:
+  - guest
+
+# NOTE: You're better off override this in your playbook
+rabbitmq_cluster_users:
+  - user: admin
+    password: admin
+    vhost: /
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+
+# RabbitMQ config
+rabbitmq_cluster_reverse_dns_lookups: false
+rabbitmq_cluster_vm_memory_high_watermark: 0.4
+rabbitmq_cluster_vm_memory_high_watermark_paging_ratio: 0.5
+rabbitmq_cluster_disk_free_limit: "{mem_relative, 1.5}"
+rabbitmq_cluster_collect_statistics: coarse
+rabbitmq_cluster_collect_statistics_interval: 5000
+rabbitmq_cluster_mnesia_table_loading_retry_limit: 10
+rabbitmq_cluster_mnesia_table_loading_retry_timeout: 30000
+
+# Clustering configuration
+rabbitmq_cluster_net_ticktime: 60
