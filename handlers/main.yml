@@ -4,4 +4,14 @@
   systemd: daemon_reload=yes
 
 - name: service restart
-  systemd: name=rabbitmq-server state=restarted
+  with_items: "{{ play_hosts }}"
+  run_once: yes
+  delegate_to: "{{ item }}"  # https://github.com/ansible/ansible/issues/12170
+  systemd:
+    name: rabbitmq-server
+    state: restarted
+
+- name: service stop
+  systemd:
+    name: rabbitmq-server
+    state: stopped

@@ -32,6 +32,7 @@ rabbitmq_cluster_users:
     configure_priv: .*
     read_priv: .*
     write_priv: .*
+    tags: administrator
 
 # RabbitMQ config
 rabbitmq_cluster_reverse_dns_lookups: false

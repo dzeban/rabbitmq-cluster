@@ -44,16 +44,28 @@
     - install
     - user
 
-- name: Ensure directories is configured
+- name: Ensure Mnesia base is configured
   file:
-    path: "{{ item }}"
+    path: "{{ rabbitmq_cluster_mnesia_base }}"
     state: directory
     owner: "{{ rabbitmq_cluster_user }}"
     group: "{{ rabbitmq_cluster_group }}"
     mode: 0755
-  with_items:
-    - "{{ rabbitmq_cluster_mnesia_base }}"
-    - "{{ rabbitmq_cluster_log_base }}"
+  register: mnesia_base
+  tags: install
+
+- name: Set bootstrapping mode if mnesia base were changed
+  when: mnesia_base.changed
+  set_fact:
+    rabbitmq_cluster_bootstrap: 1
+
+- name: Ensure log base is configured
+  file:
+    path: "{{ rabbitmq_cluster_log_base }}"
+    state: directory
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0755
   tags: install
 
 - name: Render logrotate config
@@ -66,16 +78,6 @@
   tags: config
 
 # Configure RabbitMQ service
-
-- name: Render RabbitMQ env file
-  template:
-    src: env.j2
-    dest: /etc/rabbitmq/rabbitmq-env.conf
-    owner: "{{ rabbitmq_cluster_user }}"
-    group: "{{ rabbitmq_cluster_group }}"
-    mode: 0644
-  tags: config
-
 - name: Render service unit file
   template:
     src: service.j2
@@ -86,8 +88,17 @@
   notify: service reload
   tags: config
 
-# Configure RabbitMQ
+- name: Render RabbitMQ env file
+  template:
+    src: env.j2
+    dest: /etc/rabbitmq/rabbitmq-env.conf
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0644
+  tags: config
+  notify: service stop
 
+# Configure RabbitMQ
 - name: Render RabbitMQ config
   template:
     src: config.j2
@@ -96,17 +107,50 @@
     group: "{{ rabbitmq_cluster_group }}"
     mode: 0644
   tags: config
+  notify: service restart
 
-- name: Ensure RabbitMQ service
+# Clustering
+- name: Stop RabbitMQ before boostrapping cluster
+  systemd:
+    name: rabbitmq-server
+    state: stopped
+  when: (rabbitmq_cluster_bootstrap is defined) or (rabbitmq_cluster_force | default(false))
+  tags: cluster
+
+- name: Ensure node state is cleared to bootstrap cluster
+  shell: "rm -rf {{ rabbitmq_cluster_mnesia_base}}/*"
+  when: (rabbitmq_cluster_bootstrap is defined) or (rabbitmq_cluster_force | default(false))
+  tags: cluster
+
+- name: Put Erlang cookie for the cluster
+  template:
+    src: erlang.cookie.j2
+    dest: "{{ rabbitmq_cluster_mnesia_base }}/.erlang.cookie"
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0600
+  tags:
+    - config
+    - cluster
+
+- name: Ensure RabbitMQ cluster
+  # Start RabbitMQ nodes one by one to form cluster
+  # (http://rabbitmq.1065348.n5.nabble.com/Rabbitmq-boot-failure-with-quot-tables-not-present-quot-td24494.html#a24512)
+  with_items: "{{ play_hosts }}"
+  run_once: yes
+  delegate_to: "{{ item }}"  # https://github.com/ansible/ansible/issues/12170
   systemd:
     name: rabbitmq-server
     enabled: yes
     state: started
+  tags: cluster
 
 - name: Enable RabbitMQ plugins
   rabbitmq_plugin:
     names: "{{ item }}"
     state: enabled
+    prefix: /usr/lib/rabbitmq
+    new_only: yes
   with_items: "{{ rabbitmq_cluster_plugins }}"
   notify: service restart
   tags:
@@ -117,6 +161,7 @@
   rabbitmq_user:
     user: "{{ item }}"
     state: absent
+  ignore_errors: yes  # rabbitmq_user is not idempotent
   with_items: "{{ rabbitmq_cluster_disabled_users }}"
 
 - name: Ensure RabbitMQ users
@@ -128,8 +173,9 @@
     write_priv: "{{ item.write_priv | default('.*') }}"
     vhost: "{{ item.vhost | default('/') }}"
     permissions: "{{ item.permissions | default(omit) }}"
+    tags: "{{ item.tags | default('') }}"
+  no_log: true  # do not show passwords in logs
   with_items: "{{ rabbitmq_cluster_users }}"
   tags:
     - config
     - admin
-  #  no_log: true
