@@ -32,3 +32,17 @@
   delegate_to: "{{ play_hosts | first }}" # Settings should be applied on any single node in the cluster
   run_once: yes
   with_items: "{{ rabbitmq_cluster_users }}"
+
+- name: Setup RabbitMQ policies
+  rabbitmq_policy:
+    name: "{{ item.name }}"
+    node: "{{ item.node | default('rabbit') }}"
+    apply_to: "{{ item.apply_to | default('all') }}"
+    state: "{{ item.state | default('present') }}"
+    vhost: "{{ item.vhost | default('/') }}"
+    pattern: "{{ item.pattern }}"
+    tags: "{{ item.tags }}"
+  with_items: "{{ rabbitmq_cluster_policies }}"
+  delegate_to: "{{ play_hosts | first }}" # Settings should be applied on any single node in the cluster
+  run_once: yes
+  when: rabbitmq_cluster_policies is defined
