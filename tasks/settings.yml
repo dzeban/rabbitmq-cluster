@@ -14,6 +14,8 @@
     user: "{{ item }}"
     state: absent
   ignore_errors: yes  # rabbitmq_user is not idempotent
+  delegate_to: "{{ play_hosts | first }}" # Settings should be applied on any single node in the cluster
+  run_once: yes
   with_items: "{{ rabbitmq_cluster_disabled_users }}"
 
 - name: Ensure RabbitMQ users
@@ -27,4 +29,6 @@
     permissions: "{{ item.permissions | default(omit) }}"
     tags: "{{ item.tags | default('') }}"
   no_log: true  # do not show passwords in logs
+  delegate_to: "{{ play_hosts | first }}" # Settings should be applied on any single node in the cluster
+  run_once: yes
   with_items: "{{ rabbitmq_cluster_users }}"
