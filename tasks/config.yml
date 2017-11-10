@@ -1,0 +1,29 @@
+---
+
+# Configure RabbitMQ service
+- name: Render service unit file
+  template:
+    src: service.j2
+    dest: /etc/systemd/system/rabbitmq-server.service
+    owner: root
+    group: root
+    mode: 0644
+  notify: service reload
+
+- name: Render RabbitMQ env file
+  template:
+    src: env.j2
+    dest: /etc/rabbitmq/rabbitmq-env.conf
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0644
+  notify: service stop
+
+- name: Render RabbitMQ config
+  template:
+    src: config.j2
+    dest: /etc/rabbitmq/rabbitmq.config
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0644
+  notify: service restart

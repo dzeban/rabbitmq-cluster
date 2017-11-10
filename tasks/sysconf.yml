@@ -1,0 +1,48 @@
+---
+
+# Configure system
+- name: Ensure user and group are created
+  group:
+    name: "{{ rabbitmq_cluster_group }}"
+    state: present
+  tags:
+    - user
+
+- name: Ensure user and group are created
+  user:
+    name: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    state: present
+    createhome: no
+  tags:
+    - user
+
+- name: Ensure Mnesia base is configured
+  file:
+    path: "{{ rabbitmq_cluster_mnesia_base }}"
+    state: directory
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0755
+  register: mnesia_base
+
+- name: Set bootstrapping mode if mnesia base were changed
+  when: mnesia_base.changed
+  set_fact:
+    rabbitmq_cluster_bootstrap: 1
+
+- name: Ensure log base is configured
+  file:
+    path: "{{ rabbitmq_cluster_log_base }}"
+    state: directory
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0755
+
+- name: Render logrotate config
+  template:
+    src: logrotate.j2
+    dest: /etc/logrotate.d/rabbitmq-server
+    owner: root
+    group: root
+    mode: 0644

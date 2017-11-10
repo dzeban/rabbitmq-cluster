@@ -1,0 +1,23 @@
+---
+
+# Install rabbitmq from its own repository
+# http://www.rabbitmq.com/install-debian.html
+
+- name: Import repository key
+  apt_key:
+    url: https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+    state: present
+
+- name: Add RabbitMQ apt repository
+  apt_repository:
+    repo: "deb http://www.rabbitmq.com/debian/ testing main"
+    filename: rabbitmq
+    update_cache: yes
+    state: present
+
+- name: Install RabbitMQ server package
+  apt:
+    update_cache: yes
+    force: yes
+    pkg: rabbitmq-server
+    state: present

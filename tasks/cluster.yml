@@ -1,0 +1,31 @@
+---
+
+# Clustering
+- name: Stop RabbitMQ before boostrapping cluster
+  systemd:
+    name: rabbitmq-server
+    state: stopped
+  when: (rabbitmq_cluster_bootstrap is defined) or (rabbitmq_cluster_force | default(false))
+
+- name: Ensure node state is cleared to bootstrap cluster
+  shell: "rm -rf {{ rabbitmq_cluster_mnesia_base}}/*"
+  when: (rabbitmq_cluster_bootstrap is defined) or (rabbitmq_cluster_force | default(false))
+
+- name: Put Erlang cookie for the cluster
+  template:
+    src: erlang.cookie.j2
+    dest: "{{ rabbitmq_cluster_mnesia_base }}/.erlang.cookie"
+    owner: "{{ rabbitmq_cluster_user }}"
+    group: "{{ rabbitmq_cluster_group }}"
+    mode: 0600
+
+- name: Ensure RabbitMQ cluster
+  # Start RabbitMQ nodes one by one to form cluster
+  # (http://rabbitmq.1065348.n5.nabble.com/Rabbitmq-boot-failure-with-quot-tables-not-present-quot-td24494.html#a24512)
+  with_items: "{{ play_hosts }}"
+  run_once: yes
+  delegate_to: "{{ item }}"  # https://github.com/ansible/ansible/issues/12170
+  systemd:
+    name: rabbitmq-server
+    enabled: yes
+    state: started
