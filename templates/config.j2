@@ -2,29 +2,28 @@
 %%
 %% {{ ansible_managed }}
 [
- {rabbit,
+ { rabbit,
   [
    {% if rabbitmq_cluster_reverse_dns_lookups -%}
-   {reverse_dns_lookups, true},
+   { reverse_dns_lookups, true},
    {% endif -%}
 
-   {vm_memory_high_watermark, {{ rabbitmq_cluster_vm_memory_high_watermark }} },
-   {vm_memory_high_watermark_paging_ratio, {{ rabbitmq_cluster_vm_memory_high_watermark_paging_ratio }} },
-   {disk_free_limit, {{ rabbitmq_cluster_disk_free_limit }} },
+   { vm_memory_high_watermark, {{ rabbitmq_cluster_vm_memory_high_watermark }} },
+   { vm_memory_high_watermark_paging_ratio, {{ rabbitmq_cluster_vm_memory_high_watermark_paging_ratio }} },
+   { disk_free_limit, {{ rabbitmq_cluster_disk_free_limit }} },
 
-   %% {cluster_partition_handling, ignore},
+   { cluster_partition_handling, {{ rabbitmq_cluster_partition_handling }} },
+   { cluster_nodes, { [{% for node in ansible_play_hosts %}'rabbit@{{ hostvars[node]['ansible_hostname'] }}'{% if not loop.last %},{% endif %}{% endfor %}], disc}},
 
-   {cluster_nodes, { [{% for node in ansible_play_hosts %}'rabbit@{{ hostvars[node]['ansible_hostname'] }}'{% if not loop.last %},{% endif %}{% endfor %}], disc}},
+   { collect_statistics, {{ rabbitmq_cluster_collect_statistics }} },
+   { collect_statistics_interval, {{ rabbitmq_cluster_collect_statistics_interval }} },
 
-   {collect_statistics, {{ rabbitmq_cluster_collect_statistics }} },
-   {collect_statistics_interval, {{ rabbitmq_cluster_collect_statistics_interval }} },
-
-   {mnesia_table_loading_retry_limit, {{ rabbitmq_cluster_mnesia_table_loading_retry_limit }} },
-   {mnesia_table_loading_retry_timeout, {{ rabbitmq_cluster_mnesia_table_loading_retry_timeout }} }
+   { mnesia_table_loading_retry_limit, {{ rabbitmq_cluster_mnesia_table_loading_retry_limit }} },
+   { mnesia_table_loading_retry_timeout, {{ rabbitmq_cluster_mnesia_table_loading_retry_timeout }} }
   ]},
 
- {kernel,
+ { kernel,
   [
-   {net_ticktime, {{ rabbitmq_cluster_net_ticktime }} }
+   { net_ticktime, {{ rabbitmq_cluster_net_ticktime }} }
   ]}
 ].

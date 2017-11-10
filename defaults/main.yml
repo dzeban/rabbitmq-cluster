@@ -46,3 +46,4 @@ rabbitmq_cluster_mnesia_table_loading_retry_timeout: 30000
 
 # Clustering configuration
 rabbitmq_cluster_net_ticktime: 60
+rabbitmq_cluster_partition_handling: ignore
