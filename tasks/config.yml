@@ -17,7 +17,7 @@
     owner: "{{ rabbitmq_cluster_user }}"
     group: "{{ rabbitmq_cluster_group }}"
     mode: 0644
-  notify: service stop
+  notify: service restart
 
 - name: Render RabbitMQ config
   template:
